@@ -4,7 +4,14 @@ export default class UIScene extends Phaser.Scene {
   create(){
     // Simple HUD text
     this.labels = this.add.text(16, 16, '', { font:'14px Arial', fill:'#fff' }).setDepth(10);
-    this.updateLabels(this.registry.get('player'));
+    const playerState = this.registry.get('player');
+    if (playerState) this.updateLabels(playerState);
+
+    this.clockLabel = this.add.text(this.scale.width - 16, 16, '', {
+      font:'13px Arial', fill:'#d0f0ff'
+    }).setOrigin(1, 0).setDepth(10).setAlpha(0.9);
+    const timeLabel = this.registry.get('timeOfDay');
+    if (timeLabel) this.updateClock(timeLabel);
 
     // Transient message at top-center
     this.msg = this.add.text(this.scale.width/2, 40, '', {
@@ -14,6 +21,7 @@ export default class UIScene extends Phaser.Scene {
     // Listen for changes + messages
     this.registry.events.on('changedata', (parent, key, val) => {
       if (key === 'player') this.updateLabels(val);
+      if (key === 'timeOfDay') this.updateClock(val);
     });
     this.game.events.on('showMessage', (text) => this.showMessage(text));
   }
@@ -29,5 +37,9 @@ export default class UIScene extends Phaser.Scene {
   showMessage(text){
     this.msg.setText(text).setAlpha(1);
     this.tweens.add({ targets:this.msg, alpha:0, delay:900, duration:500, ease:'Power1' });
+  }
+
+  updateClock(label){
+    this.clockLabel.setText(`Time: ${label}`);
   }
 }

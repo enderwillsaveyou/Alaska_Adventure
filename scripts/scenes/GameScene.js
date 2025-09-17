@@ -9,6 +9,18 @@ export default class GameScene extends Phaser.Scene {
     const scale = Math.max(scaleX, scaleY);
     bg.setScale(scale).setScrollFactor(0);
 
+    // Day/night tint overlay (animates in update)
+    this.dayTint = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x061634, 1)
+      .setOrigin(0).setScrollFactor(0).setDepth(0.5).setAlpha(0.15)
+      .setBlendMode(Phaser.BlendModes.MULTIPLY);
+
+    this.dayCycleDuration = 90000; // ms for full 24h loop
+    const startHour = 6;
+    this.cycleStart = this.time.now - (startHour / 24) * this.dayCycleDuration;
+    this.lastClockValue = null;
+    this.updateTimeOfDay(true);
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateTimeOfDay() });
+
     // Player sprite
     this.player = this.physics.add.sprite(400, 300, 'player')
       .setDepth(1).setCollideWorldBounds(true);
@@ -43,7 +55,31 @@ export default class GameScene extends Phaser.Scene {
     this.scene.launch('UIScene');
   }
 
+  update(time){
+    if (!this.dayTint) return;
+    const elapsed = (time - this.cycleStart) % this.dayCycleDuration;
+    const progress = elapsed / this.dayCycleDuration; // 0..1
+    const nightPhase = progress <= 0.5 ? progress * 2 : (1 - progress) * 2;
+    const eased = Phaser.Math.Easing.Sine.InOut(nightPhase);
+    const minAlpha = 0.05;
+    const maxAlpha = 0.6;
+    this.dayTint.setAlpha(Phaser.Math.Linear(minAlpha, maxAlpha, eased));
+  }
+
   movePlayer(x, y){
     this.tweens.add({ targets:this.player, x, y, duration:600, ease:'Power2' });
+  }
+
+  updateTimeOfDay(force = false){
+    const now = this.time.now;
+    const elapsed = (now - this.cycleStart) % this.dayCycleDuration;
+    const totalMinutes = Math.floor((elapsed / this.dayCycleDuration) * 24 * 60);
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    const label = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    if (force || label !== this.lastClockValue){
+      this.lastClockValue = label;
+      this.registry.set('timeOfDay', label);
+    }
   }
 }
