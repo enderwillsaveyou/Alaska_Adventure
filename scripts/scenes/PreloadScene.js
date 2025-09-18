@@ -17,6 +17,7 @@ export default class PreloadScene extends Phaser.Scene {
   create(){
     // Minimal player state (expand later)
     this.registry.set('player', { health:100, hunger:0, cold:0 });
+    this.registry.set('timeOfDay', '06:00');
     this.scene.start('GameScene');
   }
 }
