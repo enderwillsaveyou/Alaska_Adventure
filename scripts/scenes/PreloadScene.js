@@ -1,9 +1,13 @@
+import DevOverlay from '../systems/devOverlay.js';
+
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
     super({ key: 'PreloadScene' });
   }
 
   preload() {
+    DevOverlay.attach(this);
+    DevOverlay.log('PreloadScene: preload start');
     const cx = this.cameras.main.centerX;
     const cy = this.cameras.main.centerY;
     const txt = this.add.text(cx, cy, 'Loading...', {
@@ -13,16 +17,21 @@ export default class PreloadScene extends Phaser.Scene {
 
     // helpful logging
     this.load.on('filecomplete', (key) => {
-      console.log('Loaded:', key);
+      DevOverlay.log(`Loaded asset: ${key}`);
       txt.setText('Loaded: ' + key);
     });
     this.load.on('loaderror', (fileObj) => {
-      console.warn('Load error:', fileObj.key, fileObj.src);
+      DevOverlay.log(`Load error: ${fileObj.key} from ${fileObj.src}`, 'warn');
       txt.setText('Error: ' + fileObj.key);
     });
 
-    // clear any cached textures between reloads
-    this.textures.removeAll();
+    // clear any cached textures between reloads, but keep Phaser defaults
+    Object.keys(this.textures.list)
+      .filter((key) => !key.startsWith('__'))
+      .forEach((key) => {
+        this.textures.remove(key);
+      });
+    DevOverlay.log('PreloadScene: cleared cached textures');
 
     // --- images to load ---
     // use the SAME keys the scenes expect
@@ -30,24 +39,36 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('player', './assets/images/player.png');
     this.load.image('bush', './assets/images/wilderness_NEWONE.png');
     this.load.image('ui_panel', './assets/images/ui_panel.png');
+
+    this.load.once('complete', () => {
+      DevOverlay.log('PreloadScene: load complete');
+      this.verifyAssets();
+    });
   }
 
   create() {
-    // verify and generate placeholders if any required asset is missing
-    const required = ['background', 'player', 'bush', 'ui_panel'];
-    const missing = required.filter(k => !this.textures.exists(k));
-
-    if (missing.length) {
-      console.warn('Missing assets, generating placeholders:', missing);
-      this.generatePlaceholders(missing);
-    } else {
-      console.log('All required assets loaded successfully');
-    }
-
+    DevOverlay.log('PreloadScene: create');
+    this.verifyAssets();
     // simple registry defaults used by UIScene
     this.registry.set('player', { health: 100, hunger: 0, cold: 0 });
 
+    DevOverlay.log('PreloadScene: starting GameScene');
     this.scene.start('GameScene');
+  }
+
+  verifyAssets() {
+    if (this.assetsVerified) return;
+    const required = ['background', 'player', 'bush', 'ui_panel'];
+    const missing = required.filter((k) => !this.textures.exists(k));
+
+    if (missing.length) {
+      DevOverlay.log(`Missing assets detected: ${missing.join(', ')}`, 'warn');
+      this.generatePlaceholders(missing);
+    } else {
+      DevOverlay.log('All required assets loaded successfully');
+    }
+
+    this.assetsVerified = true;
   }
 
   generatePlaceholders(keys) {
@@ -62,6 +83,7 @@ export default class PreloadScene extends Phaser.Scene {
     };
 
     keys.forEach((k) => {
+      DevOverlay.log(`Generating placeholder for ${k}`, 'warn');
       switch (k) {
         case 'background': {
           // simple gradient-like stripes
