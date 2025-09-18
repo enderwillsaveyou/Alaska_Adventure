@@ -1,6 +1,9 @@
 import PreloadScene from './scenes/PreloadScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
+import WildernessScene from './scenes/WildernessScene.js';
+import MapScene from './scenes/MapScene.js';
+import MiniGameScene from './scenes/MiniGameScene.js';
 import DevOverlay from './systems/devOverlay.js';
 
 const DEBUG = true;
@@ -11,7 +14,7 @@ const config = {
   height: 600,
   parent: 'game-container',
   backgroundColor: '#000000',
-  scene: [PreloadScene, GameScene, UIScene],
+  scene: [PreloadScene, GameScene, UIScene, WildernessScene, MapScene, MiniGameScene],
   physics: {
     default: 'arcade',
     arcade: {

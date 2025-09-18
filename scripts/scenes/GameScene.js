@@ -8,6 +8,7 @@ export default class GameScene extends Phaser.Scene {
   create() {
     DevOverlay.attach(this);
     DevOverlay.log('GameScene: create');
+    console.log('[GameScene] create');
     this.createWorld();
     this.createPlayer();
     this.createInteractives();
@@ -20,8 +21,12 @@ export default class GameScene extends Phaser.Scene {
   createWorld() {
     this.cameras.main.setBackgroundColor('#000000');
 
-    if (this.textures.exists('background')) {
-      this.background = this.add.image(400, 300, 'background')
+    const backgroundKey = this.textures.exists('wilderness_bg')
+      ? 'wilderness_bg'
+      : (this.textures.exists('background') ? 'background' : null);
+
+    if (backgroundKey) {
+      this.background = this.add.image(400, 300, backgroundKey)
         .setOrigin(0.5)
         .setDepth(0);
 
@@ -30,11 +35,13 @@ export default class GameScene extends Phaser.Scene {
       const scaleY = this.cameras.main.height / this.background.height;
       const scale = Math.min(scaleX, scaleY);
       this.background.setScale(scale);
-      DevOverlay.log('GameScene: background rendered');
+      DevOverlay.log(`GameScene: background rendered using ${backgroundKey}`);
+      console.log(`[GameScene] Background ready (${backgroundKey})`);
     } else {
       DevOverlay.log('GameScene: missing background texture, drawing fallback', 'warn');
       // fail-soft: solid rect
       this.add.rectangle(400, 300, 800, 600, 0x0b2a3a).setDepth(0);
+      console.warn('[GameScene] Background texture missing, using fallback');
     }
   }
 
@@ -44,9 +51,11 @@ export default class GameScene extends Phaser.Scene {
         .setScale(0.5)
         .setDepth(1);
       DevOverlay.log('GameScene: player sprite ready');
+      console.log('[GameScene] Player ready');
     } else {
       DevOverlay.log('GameScene: player texture missing, using placeholder', 'warn');
       this.player = this.add.rectangle(400, 300, 32, 32, 0xff6b6b);
+      console.warn('[GameScene] Player texture missing, using placeholder');
     }
   }
 
@@ -58,12 +67,14 @@ export default class GameScene extends Phaser.Scene {
         .setInteractive()
         .on('pointerdown', () => this.collectBerries());
       DevOverlay.log('GameScene: bush interactive ready');
+      console.log('[GameScene] Bush ready');
     } else {
       DevOverlay.log('GameScene: bush texture missing, creating placeholder', 'warn');
       this.bush = this.add.rectangle(600, 400, 48, 48, 0x3fa36a)
         .setDepth(1)
         .setInteractive()
         .on('pointerdown', () => this.collectBerries());
+      console.warn('[GameScene] Bush texture missing, using placeholder');
     }
   }
 
@@ -74,6 +85,7 @@ export default class GameScene extends Phaser.Scene {
       const clicked = this.input.hitTestPointer(pointer);
       if (clicked.length === 0) {
         this.movePlayer(pointer.x, pointer.y);
+        console.log('[GameScene] Move player to', pointer.x, pointer.y);
       }
     });
   }
@@ -91,11 +103,17 @@ export default class GameScene extends Phaser.Scene {
     const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.bush.x, this.bush.y);
     if (d < 100) {
       const player = this.registry.get('player');
-      player.hunger = Math.max(0, player.hunger - 20);
-      this.registry.set('player', player);
+      const updated = {
+        ...player,
+        hunger: Math.max(0, player.hunger - 20)
+      };
+      this.registry.set('player', updated);
+      console.log('[GameScene] Berries collected. Player hunger:', updated.hunger);
       this.game.events.emit('showMessage', 'Found some berries!');
+      DevOverlay.log('GameScene: berries collected, hunger reduced');
     } else {
       this.game.events.emit('showMessage', 'Too far away!');
+      DevOverlay.log('GameScene: berry bush clicked but player too far', 'warn');
     }
   }
 }
