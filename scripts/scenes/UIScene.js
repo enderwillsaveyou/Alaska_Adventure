@@ -1,3 +1,5 @@
+import DevOverlay from '../systems/devOverlay.js';
+
 export default class UIScene extends Phaser.Scene {
   constructor() {
     super('UIScene');
@@ -5,6 +7,8 @@ export default class UIScene extends Phaser.Scene {
   }
 
   create() {
+    DevOverlay.attach(this);
+    DevOverlay.log('UIScene: create');
     this.setDepth(100);
 
     this.createStatusPanel();
@@ -122,11 +126,13 @@ export default class UIScene extends Phaser.Scene {
   toggleInventory() {
     this.isInventoryOpen = !this.isInventoryOpen;
     this.inventoryPanel.setVisible(this.isInventoryOpen);
+    DevOverlay.log(`UIScene: inventory ${this.isInventoryOpen ? 'opened' : 'closed'}`);
   }
 
   showMessage(text) {
     this.messageText.setText(text);
     this.messageText.setAlpha(1);
+    DevOverlay.log(`UIScene: message -> ${text}`);
     this.tweens.add({
       targets: this.messageText,
       alpha: 0,

@@ -1,6 +1,7 @@
 import PreloadScene from './scenes/PreloadScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
+import DevOverlay from './systems/devOverlay.js';
 
 const DEBUG = true;
 
@@ -26,9 +27,13 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
   return false;
 };
 
+DevOverlay.log('Boot: loading Phaser config');
+
 try {
   window.game = new Phaser.Game(config);
-  console.log('Game initialized with config:', config);
+  DevOverlay.log('Game created');
+  DevOverlay.attach(window.game);
 } catch (e) {
-  console.error('Error creating game:', e);
+  DevOverlay.log(`Error creating game: ${e && e.message ? e.message : e}`, 'error');
+  throw e;
 }
